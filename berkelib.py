@@ -1,52 +1,52 @@
 import numpy as np
 import cv2
 
-image_location = ""
+image_location = r"C:\Users\kisin\Desktop\Cut.png"
+graphh = r"C:\Users\kisin\Desktop\graph2.png"
+
 
 def gauss(kernel, sigma):
     return 1 / (np.sqrt(2 * np.pi) * sigma) * np.exp(-kernel ** 2 / (2 * sigma ** 2))
 
 
 def gaussian_derivative(kernel, sigma):
-    return 1 / (np.sqrt(2 * np.pi) * sigma) * np.exp(- (kernel ** 2) / (2 * sigma ** 2)) * (- (2 * kernel) / (2 * sigma ** 2))
+    return 1 / (np.sqrt(2 * np.pi) * sigma) * np.exp(- (kernel ** 2) / (2 * sigma ** 2)) * (
+            - (2 * kernel) / (2 * sigma ** 2))
 
 
 def gaussian_filter(image, sigma):
-    # generate kernel
-    k_length_half = 3 * sigma
-    kernel = np.linspace(-k_length_half, k_length_half, 2 * k_length_half + 1)
+    k_half = 3 * sigma
+    kernel = np.linspace(-k_half, k_half, 2 * k_half + 1)
     kernel = gauss(kernel, sigma)
-    kernel = np.expand_dims(kernel, -1)
+    image = cv2.copyMakeBorder(image, k_half, k_half, k_half, k_half, cv2.BORDER_CONSTANT)
 
-    # add padding
-    image = cv2.copyMakeBorder(image, k_length_half, k_length_half, k_length_half, k_length_half, cv2.BORDER_CONSTANT)
 
-    # create image to restore row filter
     image_temp = np.empty_like(image)
     image_filtered = np.empty_like(image)
-
     height = image.shape[0]
     width = image.shape[1]
 
     for i in range(height):
-        for j in range(k_length_half, width - k_length_half):
-            image_temp[i, j] = np.sum(kernel * image[i, j - k_length_half: j + k_length_half + 1], axis=0)
+        for j in range(k_half, width - k_half):
+            image_temp[i, j, 0] = np.sum(kernel * image[i, j - k_half: j + k_half + 1, 0])
+            image_temp[i, j, 1] = np.sum(kernel * image[i, j - k_half: j + k_half + 1, 1])
+            image_temp[i, j, 2] = np.sum(kernel * image[i, j - k_half: j + k_half + 1, 2])
 
-    for i in range(k_length_half, height - k_length_half):
+    for i in range(k_half, height - k_half):
         for j in range(width):
-            image_filtered[i, j] = np.sum(kernel * image_temp[i - k_length_half:i + k_length_half + 1, j], axis=0)
+            image_filtered[i, j, 0] = np.sum(kernel * image_temp[i - k_half:i + k_half + 1, j, 0])
+            image_filtered[i, j, 1] = np.sum(kernel * image_temp[i - k_half:i + k_half + 1, j, 1])
+            image_filtered[i, j, 2] = np.sum(kernel * image_temp[i - k_half:i + k_half + 1, j, 2])
+            # image_filtered[i, j] = np.sum(kernel * image_temp[i - k_half:i + k_half + 1, j])
 
-    return image_filtered[k_length_half:height - k_length_half, k_length_half:width - k_length_half]
+    return image_filtered[k_half:height - k_half, k_half:width - k_half]
 
 
 def gaussian_derivatives(image, sigma):
-    # generate kernel
-    k_length_half = 3 * sigma
-    kernel = np.linspace(-k_length_half, k_length_half, 2 * k_length_half + 1)
+    k_half = 3 * sigma
+    kernel = np.linspace(-k_half, k_half, 2 * k_half + 1)
     kernel = gaussian_derivative(kernel, sigma)
-
-    # add padding
-    image = cv2.copyMakeBorder(image, k_length_half, k_length_half, k_length_half, k_length_half, cv2.BORDER_CONSTANT)
+    image = cv2.copyMakeBorder(image, k_half, k_half, k_half, k_half, cv2.BORDER_CONSTANT)
 
     # create image to restore row filter
     image_filtered_x = np.empty_like(image)
@@ -56,23 +56,42 @@ def gaussian_derivatives(image, sigma):
     width = image.shape[1]
 
     for i in range(height):
-        for j in range(k_length_half, width - k_length_half):
-            image_filtered_x[i, j] = np.sum(kernel * image[i, j - k_length_half: j + k_length_half + 1], axis=0)
+        for j in range(k_half, width - k_half):
+            image_filtered_x[i, j, 0] = np.sum(kernel * image[i, j - k_half: j + k_half + 1, 0])
+            image_filtered_x[i, j, 1] = np.sum(kernel * image[i, j - k_half: j + k_half + 1, 1])
+            image_filtered_x[i, j, 2] = np.sum(kernel * image[i, j - k_half: j + k_half + 1, 2])
 
-    for i in range(k_length_half, height - k_length_half):
+    for i in range(k_half, height - k_half):
         for j in range(width):
-            image_filtered_y[i, j] = np.sum(kernel * image[i - k_length_half:i + k_length_half + 1, j], axis=0)
+            image_filtered_y[i, j, 0] = np.sum(kernel * image[i - k_half:i + k_half + 1, j, 0])
+            image_filtered_y[i, j, 1] = np.sum(kernel * image[i - k_half:i + k_half + 1, j, 1])
+            image_filtered_y[i, j, 2] = np.sum(kernel * image[i - k_half:i + k_half + 1, j, 2])
 
-    return image_filtered_x[k_length_half:height - k_length_half,
-           k_length_half:width - k_length_half], image_filtered_y[k_length_half:height - k_length_half,
-                                                 k_length_half:width - k_length_half]
+    return image_filtered_x[k_half:height - k_half,
+           k_half:width - k_half], image_filtered_y[k_half:height - k_half,
+                                   k_half:width - k_half]
 
 
-img = cv2.imread(image_location)
-img = gaussian_filter(img, 2)
-img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-x, y = gaussian_derivatives(img, 2)
-cv2.imshow("derivative_y", y)
-# cv2.imwrite(r"C:\Users\kisin\Desktop\meric3.jpg", y)
-cv2.imshow("derivative_x", x)
+def detectGraph(x, y):
+    img = np.empty_like(x)
+
+    height = img.shape[0]
+    width = img.shape[1]
+
+    for i in range(height):
+        for j in range(width):
+            img[i, j] = (x[i, j] + y[i, j])
+
+    return img
+
+
+img = cv2.imread(graphh)
+#laplacian = cv2.Laplacian(img,cv2.CV_64F)
+#img = gaussian_filter(img, 2)
+# img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+x, y = gaussian_derivatives(img, 1)
+a = detectGraph(x,y)
+# cv2.imshow("derivative_y", img)
+cv2.imwrite(r"C:\Users\kisin\Desktop\meric3.jpg", a)
+cv2.imshow("derivative_x", a)
 cv2.waitKey(0)
